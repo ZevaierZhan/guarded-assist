@@ -1,0 +1,472 @@
+{
+  "accepted": true,
+  "base": "http://127.0.0.1:18777",
+  "created": "2026-09-28T07:22:17.670301438Z",
+  "device": {
+    "type": "hello",
+    "cwd": "/home/oai",
+    "shells": [
+      "bash"
+    ],
+    "host": "7c8f1fcaf5bc",
+    "os": "linux/amd64",
+    "version": "0.2.0",
+    "pid": 12736
+  },
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-09-28T07:22:17.67030234Z",
+      "type": "request",
+      "text": "已创建真实验证请求。等待网页接受；尚未执行任何命令。"
+    },
+    {
+      "seq": 2,
+      "time": "2026-09-28T07:22:17.672358577Z",
+      "type": "consent",
+      "text": "客户已允许建立连接；每条 Shell 命令仍需客户网页审批及本机确认。"
+    },
+    {
+      "seq": 3,
+      "time": "2026-09-28T07:22:17.673284079Z",
+      "type": "download",
+      "text": "已请求下载原生工具；程序字节不变，一次性配对信息由下载文件名携带。"
+    },
+    {
+      "seq": 4,
+      "time": "2026-09-28T07:22:17.69080334Z",
+      "type": "paired",
+      "text": "客户已在本机确认；一次性票据已兑换，等待 WebSocket 握手。"
+    },
+    {
+      "seq": 5,
+      "time": "2026-09-28T07:22:17.691339361Z",
+      "type": "connected",
+      "text": "真实设备回连：7c8f1fcaf5bc / linux/amd64。已验证 WebSocket；不是浏览器模拟。"
+    },
+    {
+      "seq": 6,
+      "time": "2026-09-28T07:22:17.76233405Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 7,
+      "time": "2026-09-28T07:22:17.764538211Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 8,
+      "time": "2026-09-28T07:22:18.016946025Z",
+      "type": "started",
+      "text": "客户本机已确认，命令开始执行。"
+    },
+    {
+      "seq": 9,
+      "time": "2026-09-28T07:22:18.018699276Z",
+      "type": "output",
+      "text": "stderr: diagnostic\n"
+    },
+    {
+      "seq": 10,
+      "time": "2026-09-28T07:22:18.018779803Z",
+      "type": "output",
+      "text": "stdout: hello 中文\n"
+    },
+    {
+      "seq": 11,
+      "time": "2026-09-28T07:22:19.019874121Z",
+      "type": "output",
+      "text": "done\n"
+    },
+    {
+      "seq": 12,
+      "time": "2026-09-28T07:22:19.019904637Z",
+      "type": "result",
+      "text": "命令已结束 · failed · exit=7 · 1003 ms"
+    },
+    {
+      "seq": 13,
+      "time": "2026-09-28T07:22:19.086961545Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 14,
+      "time": "2026-09-28T07:22:19.087467956Z",
+      "type": "denied",
+      "text": "客户拒绝命令，未发送至执行器。"
+    },
+    {
+      "seq": 15,
+      "time": "2026-09-28T07:22:19.088335156Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 16,
+      "time": "2026-09-28T07:22:19.088659148Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 17,
+      "time": "2026-09-28T07:22:19.239891361Z",
+      "type": "denied",
+      "text": "客户在本机拒绝该命令。"
+    },
+    {
+      "seq": 18,
+      "time": "2026-09-28T07:22:19.31128891Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 19,
+      "time": "2026-09-28T07:22:19.311728091Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 20,
+      "time": "2026-09-28T07:22:19.412465961Z",
+      "type": "started",
+      "text": "客户本机已确认，命令开始执行。"
+    },
+    {
+      "seq": 21,
+      "time": "2026-09-28T07:22:19.414472839Z",
+      "type": "output",
+      "text": "/tmp/assist-v2-test-h3f_4d5e\n"
+    },
+    {
+      "seq": 22,
+      "time": "2026-09-28T07:22:19.414487661Z",
+      "type": "result",
+      "text": "命令已结束 · completed · exit=0 · 2 ms"
+    },
+    {
+      "seq": 23,
+      "time": "2026-09-28T07:22:19.484809847Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 24,
+      "time": "2026-09-28T07:22:19.485650216Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 25,
+      "time": "2026-09-28T07:22:19.587035724Z",
+      "type": "started",
+      "text": "客户本机已确认，命令开始执行。"
+    },
+    {
+      "seq": 26,
+      "time": "2026-09-28T07:22:20.588118854Z",
+      "type": "result",
+      "text": "命令已结束 · timed_out · exit=-1 · 1001 ms"
+    },
+    {
+      "seq": 27,
+      "time": "2026-09-28T07:22:20.653903426Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 28,
+      "time": "2026-09-28T07:22:20.654409117Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 29,
+      "time": "2026-09-28T07:22:20.75525587Z",
+      "type": "started",
+      "text": "客户本机已确认，命令开始执行。"
+    },
+    {
+      "seq": 30,
+      "time": "2026-09-28T07:22:20.75626702Z",
+      "type": "cancelling",
+      "text": "已请求停止，等待执行器回执。"
+    },
+    {
+      "seq": 31,
+      "time": "2026-09-28T07:22:20.75760027Z",
+      "type": "output",
+      "text": "running\n"
+    },
+    {
+      "seq": 32,
+      "time": "2026-09-28T07:22:20.757892194Z",
+      "type": "result",
+      "text": "命令已结束 · cancelled · exit=-1 · 2 ms"
+    },
+    {
+      "seq": 33,
+      "time": "2026-09-28T07:22:20.759203886Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 34,
+      "time": "2026-09-28T07:22:20.759740634Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 35,
+      "time": "2026-09-28T07:22:21.011285741Z",
+      "type": "cancelling",
+      "text": "已请求停止，等待执行器回执。"
+    },
+    {
+      "seq": 36,
+      "time": "2026-09-28T07:22:21.012235355Z",
+      "type": "result",
+      "text": "命令已结束 · cancelled · exit=-1 · 0 ms"
+    },
+    {
+      "seq": 37,
+      "time": "2026-09-28T07:22:21.013904464Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 38,
+      "time": "2026-09-28T07:22:21.014541742Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 39,
+      "time": "2026-09-28T07:22:21.166343422Z",
+      "type": "started",
+      "text": "客户本机已确认，命令开始执行。"
+    },
+    {
+      "seq": 40,
+      "time": "2026-09-28T07:22:21.168286113Z",
+      "type": "output",
+      "text": "final-ok\n"
+    },
+    {
+      "seq": 41,
+      "time": "2026-09-28T07:22:21.168303349Z",
+      "type": "result",
+      "text": "命令已结束 · completed · exit=0 · 1 ms"
+    },
+    {
+      "seq": 42,
+      "time": "2026-09-28T07:22:21.239577057Z",
+      "type": "approval",
+      "text": "支持方已提出命令，等待客户批准。尚未发送执行。"
+    },
+    {
+      "seq": 43,
+      "time": "2026-09-28T07:22:21.240199132Z",
+      "type": "approved",
+      "text": "客户已批准固定命令及参数，等待 assist 本机确认。"
+    },
+    {
+      "seq": 44,
+      "time": "2026-09-28T07:22:21.391373178Z",
+      "type": "started",
+      "text": "客户本机已确认，命令开始执行。"
+    },
+    {
+      "seq": 45,
+      "time": "2026-09-28T07:22:21.392332941Z",
+      "type": "revoked",
+      "text": "网页已撤销授权，拒绝后续请求；正在关闭远端连接。"
+    },
+    {
+      "seq": 46,
+      "time": "2026-09-28T07:22:21.392839368Z",
+      "type": "result",
+      "text": "命令已结束 · cancelled · exit=-1 · 1 ms"
+    },
+    {
+      "seq": 47,
+      "time": "2026-09-28T07:22:21.392850725Z",
+      "type": "stopped",
+      "text": "执行器已确认：命令处理结束、会话内存凭据释放；工具文件保留，既有改动不回滚。"
+    },
+    {
+      "seq": 48,
+      "time": "2026-09-28T07:22:21.392865457Z",
+      "type": "offline",
+      "text": "已确认 WebSocket 关闭。未收到的远端清理结果不会标记成功。"
+    }
+  ],
+  "expires": "2026-09-28T07:32:17.670301489Z",
+  "id": "s_hVcNOS9__u",
+  "invite_url": "https://example.invalid/redacted-test-invite",
+  "online": false,
+  "operations": [
+    {
+      "id": "WtwaN0efqz93",
+      "shell": "bash",
+      "command": "printf 'stdout: hello 中文\\n'; printf 'stderr: diagnostic\\n' >&2; sleep 1; printf 'done\\n'; exit 7",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "5b42b8bd3717b742753076e2f01ecf171f24129b11cd077f20488311abde6d70",
+      "status": "failed",
+      "created": "2026-09-28T07:22:17.762332228Z",
+      "outputs": [
+        {
+          "stream": "stderr",
+          "text": "stderr: diagnostic\n",
+          "at": "2026-09-28T07:22:18.018698525Z"
+        },
+        {
+          "stream": "stdout",
+          "text": "stdout: hello 中文\n",
+          "at": "2026-09-28T07:22:18.018778831Z"
+        },
+        {
+          "stream": "stdout",
+          "text": "done\n",
+          "at": "2026-09-28T07:22:19.019862694Z"
+        }
+      ],
+      "exit_code": 7,
+      "duration_ms": 1003
+    },
+    {
+      "id": "v2PGpu4cFpL3",
+      "shell": "bash",
+      "command": "printf 'SHOULD_NOT_RUN\\n'",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "eaee5c24591939289f61d17f801924e1aca40145b35a1512ea93fe5e6191b070",
+      "status": "denied",
+      "created": "2026-09-28T07:22:19.086959922Z",
+      "outputs": [],
+      "exit_code": null,
+      "duration_ms": 0
+    },
+    {
+      "id": "bWP1j38drih6",
+      "shell": "bash",
+      "command": "printf 'LOCAL_REFUSAL_MUST_NOT_RUN\\n'",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "8400acc9e1f73d1e323e8dc126428cc707ad6aeed16335f3bdfb7da7f340ea7d",
+      "status": "denied",
+      "created": "2026-09-28T07:22:19.088334154Z",
+      "outputs": [],
+      "exit_code": null,
+      "duration_ms": 0
+    },
+    {
+      "id": "kr5p_Qen_5-1",
+      "shell": "bash",
+      "command": "pwd",
+      "cwd": "/tmp/assist-v2-test-h3f_4d5e",
+      "timeout": 15,
+      "hash": "65abcecac46c3bfd15c43e955a9098a0c39b4dc8203bb10a1fe6fb66d7a9d390",
+      "status": "completed",
+      "created": "2026-09-28T07:22:19.311287428Z",
+      "outputs": [
+        {
+          "stream": "stdout",
+          "text": "/tmp/assist-v2-test-h3f_4d5e\n",
+          "at": "2026-09-28T07:22:19.414472038Z"
+        }
+      ],
+      "exit_code": 0,
+      "duration_ms": 2
+    },
+    {
+      "id": "rSwLOL_x1-R_",
+      "shell": "bash",
+      "command": "sleep 30",
+      "cwd": "",
+      "timeout": 1,
+      "hash": "0ec8fb136b1ad02bef360b954aad8bcc9032d6dbf3b44b4c81886e45f670c1ae",
+      "status": "timed_out",
+      "created": "2026-09-28T07:22:19.484808175Z",
+      "outputs": [],
+      "exit_code": -1,
+      "duration_ms": 1001
+    },
+    {
+      "id": "rETzTSA-koUy",
+      "shell": "bash",
+      "command": "printf 'running\\n'; sleep 30",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "ceaa3438994e3cb3088dd0b7b60c71cabf8f06ef04e49764dbe736c2072a26b7",
+      "status": "cancelled",
+      "created": "2026-09-28T07:22:20.653902174Z",
+      "outputs": [
+        {
+          "stream": "stdout",
+          "text": "running\n",
+          "at": "2026-09-28T07:22:20.757599158Z"
+        }
+      ],
+      "exit_code": -1,
+      "duration_ms": 2
+    },
+    {
+      "id": "e_-BregSqOpC",
+      "shell": "bash",
+      "command": "printf hold",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "ec50f0db4a15f91cf359802784f2a99955b42d7723f3fe7dcfc85d6fdfcfac14",
+      "status": "cancelled",
+      "created": "2026-09-28T07:22:20.759202935Z",
+      "outputs": [],
+      "exit_code": -1,
+      "duration_ms": 0
+    },
+    {
+      "id": "r8_icvZSSctH",
+      "shell": "bash",
+      "command": "printf 'final-ok\\n'",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "0dd69298ae0dd3abb9ec134a9e1e6978c3d761ed35c6ca2812c683d721c3b83c",
+      "status": "completed",
+      "created": "2026-09-28T07:22:21.013903593Z",
+      "outputs": [
+        {
+          "stream": "stdout",
+          "text": "final-ok\n",
+          "at": "2026-09-28T07:22:21.168284831Z"
+        }
+      ],
+      "exit_code": 0,
+      "duration_ms": 1
+    },
+    {
+      "id": "ZVBxlJ0uoMmC",
+      "shell": "bash",
+      "command": "printf 'revoke-running\\n'; sleep 30",
+      "cwd": "",
+      "timeout": 15,
+      "hash": "66e2c1e5c58b66f440c9b3420a90b543cc4b6392c1f7deef806cb136d89d2e5b",
+      "status": "cancelled",
+      "created": "2026-09-28T07:22:21.239575795Z",
+      "outputs": [],
+      "exit_code": -1,
+      "duration_ms": 1
+    }
+  ],
+  "paired": true,
+  "purpose": "真实 Shell 受控验证",
+  "revoked": true,
+  "running": false,
+  "runs": 8,
+  "seq": 48,
+  "status": "revoked",
+  "stopped": true,
+  "target": "localhost"
+}

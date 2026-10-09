@@ -1,0 +1,13 @@
+# Build output and local runtime artifacts
+/dist/
+*.exe~
+
+# Generated test evidence
+/tests/screenshots/
+/tests/*-results.json
+/tests/go-tests.jsonl
+__pycache__/
+*.py[cod]
+
+# Local architecture exploration; not product source
+/PATHFINDER-2026-10-09/

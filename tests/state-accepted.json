@@ -1,0 +1,36 @@
+{
+  "accepted": true,
+  "base": "http://127.0.0.1:18777",
+  "created": "2026-09-28T07:22:17.670301438Z",
+  "device": {
+    "type": ""
+  },
+  "events": [
+    {
+      "seq": 1,
+      "time": "2026-09-28T07:22:17.67030234Z",
+      "type": "request",
+      "text": "已创建真实验证请求。等待网页接受；尚未执行任何命令。"
+    },
+    {
+      "seq": 2,
+      "time": "2026-09-28T07:22:17.672358577Z",
+      "type": "consent",
+      "text": "客户已允许建立连接；每条 Shell 命令仍需客户网页审批及本机确认。"
+    }
+  ],
+  "expires": "2026-09-28T07:32:17.670301489Z",
+  "id": "s_hVcNOS9__u",
+  "invite_url": "https://example.invalid/redacted-test-invite",
+  "online": false,
+  "operations": [],
+  "paired": false,
+  "purpose": "真实 Shell 受控验证",
+  "revoked": false,
+  "running": false,
+  "runs": 0,
+  "seq": 2,
+  "status": "accepted",
+  "stopped": false,
+  "target": "localhost"
+}
