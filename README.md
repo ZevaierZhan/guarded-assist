@@ -6,6 +6,30 @@
 
 ## 1. Windows 同机验证
 
+### Release + AI skill（推荐入口）
+
+从 [GitHub Releases](https://github.com/ZevaierZhan/guarded-assist/releases/latest) 下载协助者机器对应的 `guarded-assist-server-<os>-<arch>` 并完整解压。包内包含 server、`assistctl` 和邀请页需要的各平台 client，运行无需安装 Go、Python、Node 或注册 MCP。
+
+下载 `guarded-assist-skill.zip`，将其中的 `guarded-assist` 文件夹放入 AI 宿主的 skill 目录（Codex 使用 `~/.codex/skills`）。skill 内的 bootstrap 脚本会锁定 Release 版本、校验 SHA256 并下载对应 server 包；随后指导 AI 用 CLI 完成协助。重启或刷新宿主的 skill 发现后即可使用 `$guarded-assist`。
+
+```powershell
+.\assistctl.exe up
+.\assistctl.exe network
+.\assistctl.exe start --purpose "排查客户问题" --key "request-unique-1"
+# 使用 start 返回的 id
+.\assistctl.exe preview --id "<id>"
+.\assistctl.exe status --id "<id>"
+.\assistctl.exe command --id "<id>" --shell powershell --command "Get-Date" --key "command-unique-1"
+.\assistctl.exe end --id "<id>"
+.\assistctl.exe status --id "<id>"
+# 确认该运行时的所有协助都可断开后，再关闭服务
+.\assistctl.exe down
+```
+
+macOS/Linux 使用 `./assistctl`。`up` 在后台启动服务并自动选可用端口；默认共用当前用户的运行时，也可用 `--state <绝对路径>` 创建独立运行时。`start` 默认选局域网 IP，可用 `--local-ip` 选择客户可达的网卡。所有操作输出 JSON；`--command-file` 可避免多行命令经过本机 Shell 转义。只把 `invite_url` 给客户，把 `preview_url` 给本机协助者。连接文件包含本机控制凭据，保持私有。`end` 撤销一个会话，`down` 断开整个运行时；查询 `stopped` 才能确认客户端停止回执。
+
+维护者推送 `vX.Y.Z` 标签或运行 Actions 的 Release 工作流即可发布六种 server 包、六种原生 client、skill ZIP 和 `SHA256SUMS`。工作流先运行 Go 测试与 vet，再对打包后的 Linux 程序验证完整 CLI 协助流程。
+
 1. 完整解压 Windows 包，关闭上一版 assist / assist-server。双击 `start-demo.cmd`，保留服务窗口。
 2. 浏览器自动打开支持方管理入口。填写问题，点击「创建请求并生成链接」。
 3. 点击「打开客户请求页」，在另一个标签页模拟客户。**管理页和客户页是两种不同凭据，不是简单切换前端按钮。不要把管理入口发给客户。**
@@ -88,7 +112,7 @@ pwd
 - PowerShell 使用 `-NoProfile -NonInteractive -Command`，不设置 ExecutionPolicy bypass。UTF-8 输出设置在命令前完成。
 - Bash 使用 `--noprofile --norc -c`。这是降低环境干扰，不是安全隔离。
 - 单条命令最大 4096 UTF-8 字节；超时 1–60 秒；输出约 60 KB 后截断并提示。每次会话最多 30 条命令且只能有一条活动命令。
-- 会话最长 10 分钟，由 daemon 本地截止时间与后台共同约束。
+- 默认会话在 10 分钟后由服务端结束；客户设备连接后可在客户页面开启持续连接，关闭开关会重新开始 10 分钟倒计时。执行器不自行计算会话到期时间，只响应服务端停止指令；客户页面关闭或失联后，服务端检测到页面连接断开并经过 20 秒宽限，撤销授权并通知执行器停止。
 
 ## 5. 组件与通信
 
@@ -108,7 +132,21 @@ assist
 
 原型组件：`Header`、`Stepper`、`Scopes`、`RequestSide`、`ConnectionSteps`、`PolicyCard`、`Terminal`、`SessionCard`、`EventFeed`、`CompletePage`、`renderModal`、`renderDev`。
 
-本版开发面板暂时代替 MCP / Agent。**尚未实现 MCP 工具注册或 Agent 宿主自动唤醒**，不把一次 HTTP 提交称为真实 Agent 编排。
+除开发面板外，现在还提供本地 stdio MCP 入口。AI 宿主可以启动同一 `assist-server` 进程，并通过六个工具操作它；不会把全局管理凭据返回给模型。**尚未实现 Agent 宿主自动唤醒**，也没有将任意 Shell 命令升级为生产级安全能力。
+
+### 本地 MCP 全流程
+
+保留的可选开发入口；目前推荐上面的 Release + CLI + skill 流程，不需要安装 MCP。若自行测试 MCP，可把 `assist-server` 注册为 stdio 程序，参数示例（把 IP 换成客户能访问的本机地址）：
+
+```text
+E:\path\to\assist-server.exe --mcp-stdio --listen 0.0.0.0:18777 --public http://192.168.1.10:18777
+```
+
+仅同机测试可省略 `--listen` 和 `--public`。MCP 模式由 AI 宿主启动并持有 broker：它**不能附着到另一个已经运行的 assist-server 进程**，也不能与其抢占同一端口。现有手动服务无需关闭，除非你要把它所占端口改由 MCP 模式使用；重启服务会使旧会话失效。MCP 运行时标准输出只用于协议消息，诊断日志走标准错误。
+
+工具依次为 `assist_start`（发起并取得客户邀请链接）、`assist_status`（查询状态和结果）、`assist_preview`（给协助者本机监督链接）、`assist_command`（发送命令）、`assist_cancel`（取消当前命令）、`assist_end`（结束协助）。发起和发送命令需要由调用方提供 `idempotency_key`：同一步重试沿用相同键，不同操作使用不同键；同键但参数不同会拒绝。命令提交只返回操作 ID，随后用状态工具查询，不自动重放未知结果。
+
+监督链接只在协助者本机打开，凭据位于 URL 片段，2 分钟内只能兑换一次本机浏览器会话。网页只能查看该会话并结束协助，不能发命令；AI 不能获得全局管理凭据。客户邀请链接仍是可停止本次协助的能力链接，只交给对应客户。MCP 关闭时 broker 也会结束，客户端连接随之断开。
 
 认证对象分离：管理凭据、客户查看凭据、一次性配对票据和设备凭据。`?` 只是控件入口，不是安全边界。策略在服务端和执行器各执行一次，默认拒绝未收录命令；这仍不是完整的生产零信任或系统沙箱。
 

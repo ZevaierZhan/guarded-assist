@@ -93,11 +93,7 @@ func Run(parent context.Context, b wire.Bootstrap, o Options) error {
 	if g.WebSocket != expected {
 		return errors.New("WebSocket 来源不一致")
 	}
-	until := g.Expires
-	if max := time.Now().Add(10 * time.Minute); until.After(max) {
-		until = max
-	}
-	ctx, cancel := context.WithDeadline(parent, until)
+	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	c, e := wire.Dial(g.WebSocket, g.DeviceToken)
 	if e != nil {

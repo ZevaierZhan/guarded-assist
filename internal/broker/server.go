@@ -28,9 +28,14 @@ type Event struct {
 }
 type Session struct {
 	ID, View, Ticket, DeviceToken, Target string
+	Supervisor, SupervisorCookie          string
+	SupervisorUntil                       time.Time
 	Purpose, LocalIP, Base                string
 	Operations                            []*Operation
 	Stopped                               bool
+	Persistent                            bool
+	Viewers                               int
+	DeviceConnected, LastViewClosed       time.Time
 
 	Created, Expires                           time.Time
 	Accepted, Paired, Online, Revoked, Running bool
@@ -43,11 +48,11 @@ type Session struct {
 	Device                                     wire.Message
 }
 type Server struct {
-	mu                  sync.Mutex
-	Sessions            map[string]*Session
-	Base, Admin, Assets string
-	Page                []byte
-	TTL                 time.Duration
+	mu                                    sync.Mutex
+	Sessions                              map[string]*Session
+	Base, Admin, Assets, SupervisorOrigin string
+	Page                                  []byte
+	TTL                                   time.Duration
 }
 
 func New(base, assets string, page []byte) *Server {
@@ -91,7 +96,7 @@ func (s *Server) addLocked(p *Session, kind, text string) {
 	}
 }
 func (s *Server) valid(p *Session) bool {
-	return p != nil && !p.Revoked && time.Now().Before(p.Expires)
+	return p != nil && !p.Revoked && (p.Persistent || time.Now().Before(p.Expires))
 }
 func (s *Server) findTicket(t string) *Session {
 	for _, p := range s.Sessions {
@@ -164,7 +169,7 @@ func (s *Server) snapshot(p *Session) map[string]any {
 	}
 	if p.Revoked {
 		status = "revoked"
-	} else if time.Now().After(p.Expires) {
+	} else if !p.Persistent && time.Now().After(p.Expires) {
 		status = "expired"
 	}
 	b := wire.Bootstrap{Version: 2, Base: p.Base, Ticket: p.Ticket}
@@ -176,7 +181,23 @@ func (s *Server) snapshot(p *Session) map[string]any {
 		cp.Outputs = append([]Output{}, o.Outputs...)
 		ops = append(ops, cp)
 	}
-	return map[string]any{"purpose": p.Purpose, "operations": ops, "stopped": p.Stopped, "id": p.ID, "local_ip": p.LocalIP, "status": status, "accepted": p.Accepted, "paired": p.Paired, "online": p.Online && p.Device.Type == "hello", "revoked": p.Revoked, "running": p.Running, "expires": p.Expires, "created": p.Created, "runs": p.RunCount, "device": p.Device, "events": ev, "launch_uri": "assist://join/" + encoded, "filename_windows": "assist--" + encoded + ".exe", "filename_linux": "assist--" + encoded, "filename_python": "assist--" + encoded + ".py", "invite_url": p.Base + "/#r=" + p.ID + "&t=" + p.View, "base": p.Base, "seq": p.Seq}
+	expires := any(p.Expires)
+	if p.Persistent {
+		expires = nil
+	}
+	return map[string]any{"purpose": p.Purpose, "operations": ops, "stopped": p.Stopped, "id": p.ID, "local_ip": p.LocalIP, "status": status, "accepted": p.Accepted, "paired": p.Paired, "online": p.Online && p.Device.Type == "hello", "revoked": p.Revoked, "running": p.Running, "persistent": p.Persistent, "expires": expires, "created": p.Created, "runs": p.RunCount, "device": p.Device, "events": ev, "launch_uri": "assist://join/" + encoded, "filename_windows": "assist--" + encoded + ".exe", "filename_linux": "assist--" + encoded, "filename_python": "assist--" + encoded + ".py", "invite_url": p.Base + "/#r=" + p.ID + "&t=" + p.View, "base": p.Base, "seq": p.Seq}
+}
+
+func (s *Server) snapshotFor(r *http.Request, p *Session) map[string]any {
+	out := s.snapshot(p)
+	if !equal(bearer(r), s.Admin) && !equal(bearer(r), p.View) {
+		delete(out, "launch_uri")
+		delete(out, "invite_url")
+		delete(out, "filename_windows")
+		delete(out, "filename_linux")
+		delete(out, "filename_python")
+	}
+	return out
 }
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -188,6 +209,8 @@ func (s *Server) Handler() http.Handler {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Write(s.Page)
 	})
+	mux.HandleFunc("GET /supervise/{id}", s.supervise)
+	mux.HandleFunc("POST /api/supervisor/exchange", s.exchangeSupervisor)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		jsonOut(w, 200, map[string]string{"service": "assist-demo", "version": "0.2.0", "scope": "policy-gated-shell"})
 	})
@@ -198,6 +221,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/requests/{id}/commands", s.command)
 	mux.HandleFunc("POST /api/requests/{id}/commands/{op}/cancel", s.cancelCommand)
 	mux.HandleFunc("POST /api/requests/{id}/stop", s.stop)
+	mux.HandleFunc("POST /api/requests/{id}/persistence", s.setPersistence)
 	mux.HandleFunc("GET /api/requests/{id}/download", s.download)
 	mux.HandleFunc("GET /api/bootstrap", s.bootstrap)
 	mux.HandleFunc("POST /api/pair", s.pair)
@@ -211,7 +235,7 @@ func (s *Server) Handler() http.Handler {
 		// Browser operations must be same-origin. Native clients send no Origin and
 		// still need one-use or device credentials; no credential lives in a WS URL.
 		origin := r.Header.Get("Origin")
-		if origin != "" && !s.originAllowed(origin) {
+		if origin != "" && !(origin == s.SupervisorOrigin && isLoopbackRequest(r)) && !s.originAllowed(origin) {
 			fail(w, 403, "拒绝跨来源请求")
 			return
 		}
@@ -307,7 +331,13 @@ func (s *Server) networkCheck(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) auth(w http.ResponseWriter, r *http.Request) *Session {
 	p := s.Sessions[r.PathValue("id")]
-	if p == nil || (!equal(bearer(r), p.View) && !equal(bearer(r), s.Admin)) {
+	localSupervisor := false
+	if p != nil && (p.Persistent || time.Now().Before(p.Expires)) && isLoopbackRequest(r) && supervisorPathAllowed(r, p.ID) {
+		if cookie, err := r.Cookie("assist_supervisor"); err == nil {
+			localSupervisor = equal(cookie.Value, p.SupervisorCookie)
+		}
+	}
+	if p == nil || (!equal(bearer(r), p.View) && !equal(bearer(r), s.Admin) && !localSupervisor) {
 		fail(w, 403, "请求不存在或访问凭据无效")
 		return nil
 	}
@@ -317,7 +347,7 @@ func (s *Server) get(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if p := s.auth(w, r); p != nil {
-		jsonOut(w, 200, s.snapshot(p))
+		jsonOut(w, 200, s.snapshotFor(r, p))
 	}
 }
 func (s *Server) events(w http.ResponseWriter, r *http.Request) {
@@ -329,8 +359,22 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	}
 	ch := make(chan struct{}, 1)
 	p.Subscribers[ch] = true
+	viewer := equal(bearer(r), p.View)
+	if viewer {
+		p.Viewers++
+	}
 	s.mu.Unlock()
-	defer func() { s.mu.Lock(); delete(p.Subscribers, ch); s.mu.Unlock() }()
+	defer func() {
+		s.mu.Lock()
+		delete(p.Subscribers, ch)
+		if viewer {
+			p.Viewers--
+			if p.Viewers == 0 {
+				p.LastViewClosed = time.Now()
+			}
+		}
+		s.mu.Unlock()
+	}()
 	f, ok := w.(http.Flusher)
 	if !ok {
 		fail(w, 500, "SSE unavailable")
@@ -340,7 +384,7 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Accel-Buffering", "no")
 	send := func() bool {
 		s.mu.Lock()
-		b, e := json.Marshal(s.snapshot(p))
+		b, e := json.Marshal(s.snapshotFor(r, p))
 		s.mu.Unlock()
 		if e != nil {
 			return false
@@ -516,6 +560,10 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 				s.addLocked(p, "unknown", "连接结束时操作仍在运行，结果未知；不会自动重发。")
 			}
 			s.addLocked(p, "offline", "已确认 WebSocket 关闭。未收到的远端清理结果不会标记成功。")
+			if p.Persistent && !p.Revoked {
+				p.Revoked = true
+				s.addLocked(p, "revoked", "持续连接已断开，本次授权已撤销；重新协助需要新请求。")
+			}
 		}
 		s.mu.Unlock()
 	}()
@@ -549,6 +597,7 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p.Device = m
+	p.DeviceConnected = time.Now()
 	s.addLocked(p, "connected", "真实设备回连："+m.Host+" / "+m.OS+"。已验证 WebSocket；不是浏览器模拟。")
 	s.mu.Unlock()
 
@@ -565,6 +614,7 @@ func (s *Server) device(w http.ResponseWriter, r *http.Request) {
 		// mere WebSocket disconnect as completed cleanup.
 		if m.Type == "stopped" {
 			p.Stopped = true
+			p.Revoked = true
 			s.addLocked(p, "stopped", "执行器已确认：命令处理结束、会话内存凭据释放；工具文件保留，既有改动不回滚。")
 			s.mu.Unlock()
 			return
@@ -591,13 +641,48 @@ func (s *Server) stop(w http.ResponseWriter, r *http.Request) {
 		s.addLocked(p, "revoked", "网页已撤销授权，拒绝后续请求；正在关闭远端连接。")
 	}
 	c := p.Conn
-	out := s.snapshot(p)
+	out := s.snapshotFor(r, p)
 	s.mu.Unlock()
 	if c != nil {
 		c.WriteJSON(wire.Message{Type: "stop"})
 		go func() { time.Sleep(5 * time.Second); c.Close() }()
 	}
 	jsonOut(w, 200, out)
+}
+func (s *Server) setPersistence(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Enabled bool `json:"enabled"`
+	}
+	if !decode(w, r, &in) {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	p := s.Sessions[r.PathValue("id")]
+	if p == nil || !equal(bearer(r), p.View) {
+		fail(w, 403, "仅客户页面可调整持续连接")
+		return
+	}
+	if !s.valid(p) || !p.Online || p.Device.Type != "hello" || p.Conn == nil {
+		fail(w, 409, "设备未连接或协助已结束")
+		return
+	}
+	if p.Persistent != in.Enabled {
+		expires := time.Time{}
+		if !in.Enabled {
+			expires = time.Now().Add(s.TTL)
+		}
+		p.Persistent = in.Enabled
+		if !in.Enabled {
+			p.Expires = expires
+		}
+		if in.Enabled {
+			s.addLocked(p, "persistent", "客户已开启持续连接；不再按倒计时自动结束。可随时手动结束。")
+		} else {
+			s.addLocked(p, "timed", "客户已关闭持续连接；十分钟倒计时重新开始。")
+		}
+	}
+	jsonOut(w, 200, s.snapshotFor(r, p))
 }
 func (s *Server) Sweep(ctx context.Context) {
 	t := time.NewTicker(time.Second)
@@ -616,9 +701,21 @@ func (s *Server) Sweep(ctx context.Context) {
 		case <-t.C:
 			s.mu.Lock()
 			for _, p := range s.Sessions {
-				if !p.Revoked && time.Now().After(p.Expires) {
+				pageGone := false
+				if p.Online && p.Device.Type == "hello" && p.Viewers == 0 {
+					last := p.DeviceConnected
+					if p.LastViewClosed.After(last) {
+						last = p.LastViewClosed
+					}
+					pageGone = time.Since(last) > 20*time.Second
+				}
+				if !p.Revoked && ((!p.Persistent && time.Now().After(p.Expires)) || pageGone) {
 					p.Revoked = true
-					s.addLocked(p, "expired", "授权已到期，拒绝新操作并通知执行器停止。")
+					if pageGone {
+						s.addLocked(p, "page_closed", "客户页面已关闭或失联，授权已撤销并通知执行器停止。")
+					} else {
+						s.addLocked(p, "expired", "授权已到期，拒绝新操作并通知执行器停止。")
+					}
 					if p.Conn != nil {
 						c := p.Conn
 						go func() { c.WriteJSON(wire.Message{Type: "stop"}); time.Sleep(5 * time.Second); c.Close() }()
@@ -634,6 +731,9 @@ func Serve(ctx context.Context, addr string, s *Server) error {
 	if e != nil {
 		return e
 	}
+	return ServeListener(ctx, ln, s)
+}
+func ServeListener(ctx context.Context, ln net.Listener, s *Server) error {
 	srv := &http.Server{Handler: s.Handler(), ReadHeaderTimeout: 8 * time.Second, IdleTimeout: 70 * time.Second, MaxHeaderBytes: 16384}
 	go s.Sweep(ctx)
 	go func() {
@@ -642,8 +742,8 @@ func Serve(ctx context.Context, addr string, s *Server) error {
 		defer cancel()
 		srv.Shutdown(c)
 	}()
-	log.Printf("assist demo listening on %s; sessions expire in %s", addr, s.TTL)
-	e = srv.Serve(ln)
+	log.Printf("assist demo listening on %s; sessions expire in %s", ln.Addr(), s.TTL)
+	e := srv.Serve(ln)
 	if e == http.ErrServerClosed {
 		return nil
 	}

@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (vMAJOR.MINOR.PATCH)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  windows-cli:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Verify detached Windows CLI lifecycle
+        shell: pwsh
+        run: |
+          go build -o dist/windows-test/assist-server.exe ./cmd/assist-server
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go build -o dist/windows-test/assistctl.exe ./cmd/assistctl
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -Path dist/windows-test/assist-server.exe,dist/windows-test/assistctl.exe -DestinationPath dist/windows-test/package.zip
+          python tests/cli_release.py dist/windows-test/package.zip --control-only
+  publish:
+    needs: windows-cli
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Validate release tag
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - name: Test
+        run: |
+          go test -race ./...
+          go vet ./...
+      - name: Build server, client and skill archives
+        run: python3 scripts/release.py
+      - name: Verify CLI lifecycle from packaged release
+        run: python3 tests/cli_release.py dist/release/guarded-assist-server-linux-amd64.tar.gz
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          gh release create "$TAG" dist/release/* --target "$GITHUB_SHA" --title "Guarded Assist $TAG" --notes-file docs/release-notes.md
