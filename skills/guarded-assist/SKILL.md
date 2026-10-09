@@ -11,6 +11,8 @@ Repository: https://github.com/ZevaierZhan/guarded-assist
 
 Use a user-requested version, otherwise resolve the latest stable Release once. Run the bundled bootstrap script for the helper's OS; it prints JSON containing the pinned version and absolute CLI path. Existing downloaded versions can be reused. Both scripts verify the archive's SHA-256 before extraction. The helper requires PowerShell on Windows or curl, tar and a SHA-256 utility on macOS/Linux.
 
+When an authenticated GitHub CLI is available, the scripts use it for Release discovery and download; otherwise they use public GitHub URLs with download retries. Windows architecture detection also works when the execution environment omits the usual architecture variables.
+
 - Windows: `powershell -NoProfile -File <skill-directory>/scripts/bootstrap.ps1` (optional `-Version vX.Y.Z`).
 - macOS/Linux: `bash <skill-directory>/scripts/bootstrap.sh` (optional first argument `vX.Y.Z`).
 
